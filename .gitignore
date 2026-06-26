@@ -1,0 +1,46 @@
+# ==========================================
+# Dependencias y paquetes
+# ==========================================
+node_modules/
+/client/node_modules/
+/server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==========================================
+# Compilación y producción
+# ==========================================
+# Salida de Vite (Client)
+/client/dist/
+
+# Salida de TypeScript si compilas a JS (Server)
+/server/dist/
+/server/build/
+*.tsbuildinfo
+
+# ==========================================
+# Variables de entorno (¡Seguridad!)
+# Aquí irán tus llaves secretas de Supabase
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# ==========================================
+# Sistemas Operativos e IDEs
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
