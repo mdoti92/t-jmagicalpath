@@ -40,14 +40,6 @@ export class BoardScene extends Phaser.Scene {
 
   private async connectToServer() {
     try {
-      if (this.shouldUseMockConnection()) {
-        console.log("🧪 Usando mock de joinOrCreate...");
-        this.playerSessionId = "mock-player";
-        this.room = this.createMockRoom();
-        console.log(`✅ Mock conectado a sala con ID: ${this.playerSessionId}`);
-        return;
-      }
-
       const serverURL = window.location.hostname === "localhost"
         ? "ws://localhost:2567"
         : `ws://${window.location.hostname}:2567`;
@@ -79,62 +71,6 @@ export class BoardScene extends Phaser.Scene {
 
       this.showError(`No se pudo conectar al servidor. ${message}`);
     }
-  }
-
-  private shouldUseMockConnection(): boolean {
-    if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.search).get("mock") === "1";
-  }
-
-  private createMockRoom(): Colyseus.Room<GameState> {
-    const mockState: GameState = {
-      board: {
-        grid: Array.from({ length: GRID_ROWS }, (_, y) =>
-          Array.from({ length: GRID_COLUMNS }, (_, x) => ({
-            x,
-            y,
-            symbol: ["☀️", "🌙", "⭐", "🔥", "🌿", "💧"][(x + y) % 6],
-          }))
-        ),
-        walls: [],
-        gridSize: GRID_COLUMNS,
-        tileCount: GRID_COLUMNS * GRID_ROWS,
-      },
-      activePlayers: [
-        [this.playerSessionId ?? "mock-player", {
-          sessionId: this.playerSessionId ?? "mock-player",
-          position: { x: 0, y: 0 },
-        }],
-      ],
-    };
-
-    let stateCallback: ((state: GameState) => void) | null = null;
-
-    const room = {
-      sessionId: this.playerSessionId ?? "mock-player",
-      onStateChange: (callback: (state: GameState) => void) => {
-        stateCallback = callback;
-        callback(mockState);
-      },
-      send: (type: string, message: any) => {
-        if (type !== "move" || !stateCallback) return;
-
-        const nextPosition = {
-          x: message.toX,
-          y: message.toY,
-        };
-
-        mockState.activePlayers[0][1].position = nextPosition;
-        stateCallback({
-          ...mockState,
-          activePlayers: [...mockState.activePlayers],
-        });
-      },
-    } as unknown as Colyseus.Room<GameState>;
-
-    this.boardState = mockState;
-    this.updateGameboard();
-    return room;
   }
 
   private updateGameboard() {

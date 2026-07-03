@@ -30,17 +30,18 @@ app.get("/", (req, res) => {
 
 const server = http.createServer(app);
 const gameServer = new Server({
+  server,
   gracefullyShutdown: true,
 });
-
-// Attach Colyseus al servidor HTTP
-(gameServer as any).attach(server);
 
 // Registrar la sala del laberinto
 gameServer.define("laberinto_room", MyRoom);
 
-server.listen(port, () => {
+void gameServer.listen(port).then(() => {
   console.log(`⚔️  Servidor de Colyseus escuchando en http://localhost:${port}`);
   console.log(`🌐 WebSocket: ws://localhost:${port}`);
   console.log(`✅ CORS habilitado para todas las solicitudes`);
+}).catch((error) => {
+  console.error("❌ Error iniciando Colyseus:", error);
+  process.exit(1);
 });
