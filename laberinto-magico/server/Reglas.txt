@@ -1,0 +1,79 @@
+# 🧙 El Laberinto Mágico — Reglas del juego
+
+## Idea del juego
+
+Los aprendices de mago exploran un laberinto misterioso en busca de símbolos mágicos. El problema: los grandes magos les juegan bromas y los caminos se abren y cierran como por arte de magia. Los muros son invisibles desde arriba, así que nadie sabe exactamente qué hay debajo hasta que choca con ellos.
+
+**Objetivo:** ser el primero en recolectar 5 símbolos mágicos.
+
+---
+
+## Componentes
+
+- Tablero de dos niveles: laberinto subterráneo (con muros) + placa de suelo (con símbolos)
+- 24 muros de madera
+- 24 fichas con símbolos mágicos
+- 1 bolsa de tela (para las fichas)
+- 1 dado con caras: 1, 2, 2, 3, 3, 4
+- 4 peones (magos) en rojo, azul, amarillo y verde
+- 4 bolas metálicas (una por peón, actúan como imán bajo el tablero)
+
+---
+
+## Preparación
+
+1. Colocar el laberinto subterráneo dentro de la caja y ubicar los muros de madera en las ranuras. Cada casilla debe tener al menos una entrada — ninguna puede quedar bloqueada por completo.
+2. Colocar la placa de suelo encima del laberinto. Los muros quedan ocultos debajo.
+3. Meter todas las fichas de símbolos en la bolsa de tela y mezclarlas.
+4. Sacar una ficha de la bolsa y colocarla visible al lado del tablero — ese es el símbolo activo que todos persiguen.
+5. Cada jugador elige un peón y lo coloca en una esquina del tablero. Si hay dos jugadores, deben elegir esquinas opuestas. Colocar la bola metálica debajo del tablero, bajo el peón (queda sujeta magnéticamente).
+
+---
+
+## Turno de juego
+
+Se juega en turnos. Empieza el jugador que haya perdido más recientemente (o se define al azar la primera vez).
+
+Cada turno consiste en:
+
+1. **Tirar el dado** — el resultado indica cuántas casillas puede mover el peón como máximo. Se puede mover menos casillas si se prefiere.
+2. **Mover el peón** — el peón se mueve casilla por casilla en horizontal o vertical. No se puede mover en diagonal. Se puede cambiar de dirección durante el movimiento (el recorrido no tiene que ser en línea recta), pero el movimiento debe ser fluido y continuo — no se puede retroceder sobre el camino ya recorrido en ese turno.
+3. **Pasar por otros peones** — está permitido. Puede haber más de un peón en la misma casilla.
+
+---
+
+## Muros invisibles
+
+Los muros están debajo del tablero y no son visibles. El jugador descubre si hay un muro cuando intenta moverse hacia una casilla bloqueada.
+
+**Si el peón choca con un muro:**
+- La bola metálica cae y sale por una de las cuatro esquinas del tablero.
+- El jugador pierde el resto de su movimiento (las casillas no usadas se pierden).
+- Recoge la bola, vuelve a colocar su peón en la esquina inicial donde estaba y pone la bola debajo nuevamente.
+- Pasa el turno al siguiente jugador.
+
+---
+
+## Símbolos mágicos
+
+Hay un símbolo activo visible al lado del tablero en todo momento. Todos los jugadores buscan llegar a la casilla del tablero que muestra ese símbolo.
+
+**Cuando un jugador llega a la casilla del símbolo activo:**
+- Toma la ficha del símbolo — es su punto.
+- Su movimiento termina ahí, aunque le queden casillas por mover.
+- Se saca una nueva ficha de la bolsa y se coloca visible — ese es el nuevo símbolo activo.
+
+**Caso especial:** si el peón de otro jugador ya está parado sobre la casilla del símbolo activo cuando se revela, ese jugador toma la ficha directamente y se roba una nueva de la bolsa.
+
+---
+
+## Fin del juego
+
+La partida termina cuando un jugador recolecta su quinta ficha de símbolo mágico. Ese jugador gana.
+
+---
+
+## Variantes de dificultad
+
+- **Fácil (19 muros):** menos muros colocados, el laberinto tiene más caminos abiertos.
+- **Difícil (24 muros):** todos los muros colocados, el laberinto es más cerrado y complejo.
