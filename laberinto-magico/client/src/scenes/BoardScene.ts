@@ -40,12 +40,12 @@ export class BoardScene extends Phaser.Scene {
 
   private async connectToServer() {
     try {
-      const serverURL = window.location.hostname === "localhost" 
+      const serverURL = window.location.hostname === "localhost"
         ? "ws://localhost:2567"
         : `ws://${window.location.hostname}:2567`;
-      
+
       console.log(`📡 Conectando a: ${serverURL}`);
-      
+
       this.client = new Colyseus.Client(serverURL);
       console.log("📡 Cliente Colyseus creado...");
 
@@ -62,7 +62,14 @@ export class BoardScene extends Phaser.Scene {
       });
     } catch (error) {
       console.error("❌ Error conectando al servidor:", error);
-      this.showError(`No se pudo conectar al servidor. Error: ${(error as any).message}`);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "Revisa que el servidor esté corriendo en localhost:2567";
+
+      this.showError(`No se pudo conectar al servidor. ${message}`);
     }
   }
 

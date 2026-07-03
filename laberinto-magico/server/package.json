@@ -13,8 +13,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@colyseus/tools": "^0.17.19",
-    "colyseus": "^0.17.10",
+    "@colyseus/auth": "^0.16.4",
+    "@colyseus/core": "^0.16.5",
+    "@colyseus/redis-driver": "^0.16.1",
+    "@colyseus/redis-presence": "^0.16.4",
+    "@colyseus/schema": "^4.0.27",
+    "@colyseus/tools": "^0.16.20",
+    "@colyseus/ws-transport": "^0.16.4",
+    "colyseus": "^0.16.5",
     "cors": "^2.8.6",
     "express": "^5.2.1"
   },
