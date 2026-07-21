@@ -43,8 +43,20 @@ export class LobbyScene extends Phaser.Scene {
         nameInputElement.style.fontSize = '16px';
         nameInputElement.style.borderRadius = '6px';
         nameInputElement.style.border = '1px solid #7f8cff';
-        this.nameInput = this.add.dom(400, 180).createFromHTML(nameInputElement.outerHTML);
-        this.nameInput.setOrigin(0.5, 0);
+        if (this.sys.game.domContainer) {
+            this.nameInput = this.add.dom(400, 180).createFromHTML(nameInputElement.outerHTML);
+            this.nameInput.setOrigin(0.5, 0);
+        }
+        else {
+            const parent = document.getElementById('game-container') || document.body;
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = nameInputElement.outerHTML;
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = 'calc(50% - 110px)';
+            wrapper.style.top = '180px';
+            parent.appendChild(wrapper);
+            this.nameInput = { node: wrapper.firstElementChild };
+        }
         this.add.text(220, 245, 'Jugadores:', {
             fontSize: '18px',
             color: '#ffffff'
