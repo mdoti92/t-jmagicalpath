@@ -7,9 +7,9 @@ export class EffectsManager {
     startGridX: number,
     startGridY: number,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
+    onComplete?: () => void
   ) {
-    // 1. Crear texto flotante de impacto
     const text = scene.add.text(pawnSprite.x, pawnSprite.y - 20, '¡BOOM! MURO', {
       fontSize: '16px',
       color: '#ff4d4d',
@@ -24,15 +24,14 @@ export class EffectsManager {
       onComplete: () => text.destroy()
     });
 
-    // 2. Parpadeo de color/alfa en el peón
     scene.tweens.add({
       targets: pawnSprite,
       alpha: 0.2,
+      x: pawnSprite.x + 6,
       yoyo: true,
       repeat: 2,
       duration: 100,
       onComplete: () => {
-        // 3. Regreso rápido a la esquina inicial
         const targetX = offsetX + startGridX * 80 + 40;
         const targetY = offsetY + startGridY * 80 + 40;
 
@@ -40,10 +39,35 @@ export class EffectsManager {
           targets: pawnSprite,
           x: targetX,
           y: targetY,
+          alpha: 1,
           duration: 400,
-          ease: 'Back.easeOut'
+          ease: 'Back.easeOut',
+          onComplete: () => onComplete?.()
         });
       }
+    });
+  }
+
+  playCollectSymbolAnimation(scene: Phaser.Scene, pixelX: number, pixelY: number) {
+    const flash = scene.add.circle(pixelX, pixelY, 20, 0xfff176, 0.4).setDepth(5);
+    const ring = scene.add.circle(pixelX, pixelY, 8, 0xffffff, 0.2).setDepth(6);
+
+    scene.tweens.add({
+      targets: flash,
+      scale: 2.2,
+      alpha: 0,
+      duration: 500,
+      ease: 'Power2',
+      onComplete: () => flash.destroy()
+    });
+
+    scene.tweens.add({
+      targets: ring,
+      scale: 2.6,
+      alpha: 0,
+      duration: 450,
+      ease: 'Power2',
+      onComplete: () => ring.destroy()
     });
   }
 }
