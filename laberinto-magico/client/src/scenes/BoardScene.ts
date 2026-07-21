@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
+import { Room } from 'colyseus.js';
 import { PawnManager } from '../managers/PawnManager';
 import { EffectsManager } from '../managers/EffectsManager';
 
 const CELL_SIZE = 80;
 const BOARD_SIZE = 6;
-const BOARD_OFFSET_X = 160;
-const BOARD_OFFSET_Y = 90;
 
 const BOARD_SYMBOLS = [
   [1, 2, 3, 4, 5, 6],
@@ -19,38 +18,47 @@ const BOARD_SYMBOLS = [
 export class BoardScene extends Phaser.Scene {
   private pawnManager!: PawnManager;
   private effectsManager!: EffectsManager;
-  private room!: any;
+  private room!: Room;
   private boardGrid!: Phaser.GameObjects.Container;
   private symbolLabels: Phaser.GameObjects.Text[] = [];
+  private tileSize: number = CELL_SIZE;
+  private offsetX: number = 0;
+  private offsetY: number = 0;
 
   constructor() {
     super({ key: 'BoardScene' });
   }
 
+  init(data: { room?: Room }) {
+    this.room = data.room || this.registry.get('room');
+  }
+
   create() {
-    this.room = this.registry.get('room');
     this.pawnManager = new PawnManager();
     this.effectsManager = new EffectsManager();
 
+    this.offsetX = (this.cameras.main.width - BOARD_SIZE * this.tileSize) / 2;
+    this.offsetY = (this.cameras.main.height - BOARD_SIZE * this.tileSize) / 2;
+
     this.drawBoard();
-    this.setupListeners();
-    this.input.on('pointerdown', this.handleBoardClick, this);
+    this.setupColyseusListeners();
+    this.setupInputListeners();
   }
 
   private drawBoard() {
-    this.add.rectangle(400, 300, 560, 560, 0x1f2a44, 0.95).setOrigin(0.5);
+    this.add.rectangle(this.cameras.main.centerX, this.cameras.main.centerY, 560, 560, 0x1f2a44, 0.95).setOrigin(0.5);
 
     this.boardGrid = this.add.container(0, 0);
 
     for (let y = 0; y < BOARD_SIZE; y++) {
       for (let x = 0; x < BOARD_SIZE; x++) {
         const pixel = this.gridToPixel(x, y);
-        const cellBg = this.add.rectangle(pixel.x, pixel.y, CELL_SIZE - 6, CELL_SIZE - 6, 0x2f4b7c, 0.9);
+        const cellBg = this.add.rectangle(pixel.x, pixel.y, this.tileSize - 6, this.tileSize - 6, 0x2f4b7c, 0.9);
         this.boardGrid.add(cellBg);
 
         const symbolId = BOARD_SYMBOLS[y][x];
-        const label = this.add.text(pixel.x, pixel.y, `${symbolId}`, {
-          fontSize: '12px',
+        const label = this.add.text(pixel.x, pixel.y, `✨ ${symbolId}`, {
+          fontSize: '14px',
           color: '#fef3c7'
         }).setOrigin(0.5);
         this.boardGrid.add(label);
@@ -58,66 +66,90 @@ export class BoardScene extends Phaser.Scene {
       }
     }
 
-    this.add.text(400, 40, '🧙 Laberinto Mágico', {
+    this.add.text(this.cameras.main.centerX, 40, '🧙 Laberinto Mágico', {
       fontSize: '22px',
       color: '#ffffff'
     }).setOrigin(0.5);
   }
 
-  private setupListeners() {
+  private setupColyseusListeners() {
     if (!this.room) return;
 
-    this.room.state.players.onAdd((player: any, playerId: string) => {
-      const color = player.color || 'rojo';
-      this.pawnManager.createPawn(this, playerId, color, player.x, player.y, BOARD_OFFSET_X, BOARD_OFFSET_Y);
+    this.room.state.players.forEach((player: any, playerId: string) => {
+      this.attachPlayer(player, playerId);
+    });
 
-      player.onChange(() => {
-        this.pawnManager.movePawnSmooth(this, playerId, player.x, player.y, BOARD_OFFSET_X, BOARD_OFFSET_Y);
-      });
+    this.room.state.players.onAdd((player: any, playerId: string) => {
+      this.attachPlayer(player, playerId);
     });
 
     this.room.state.players.onRemove((player: any, playerId: string) => {
       this.pawnManager.removePawn(playerId);
     });
 
-    this.room.onMessage('WALL_HIT', (payload: any) => {
+    this.room.onMessage('WALL_HIT', (payload: { playerId: string; startX: number; startY: number }) => {
       const pawnSprite = this.pawnManager.getPawnSprite(payload.playerId);
-      if (pawnSprite) {
-        this.effectsManager.playWallCollisionAnimation(this, pawnSprite, payload.startX, payload.startY, BOARD_OFFSET_X, BOARD_OFFSET_Y, () => {});
+      const playerState = this.room.state.players.get(payload.playerId);
+
+      if (pawnSprite && playerState) {
+        this.effectsManager.playWallCollisionAnimation(
+          this,
+          pawnSprite,
+          playerState.startX,
+          playerState.startY,
+          this.offsetX,
+          this.offsetY
+        );
       }
     });
 
-    this.room.onMessage('SYMBOL_COLLECTED', (payload: any) => {
+    this.room.onMessage('SYMBOL_COLLECTED', (payload: { x: number; y: number }) => {
       const pixel = this.gridToPixel(payload.x, payload.y);
       this.effectsManager.playCollectSymbolAnimation(this, pixel.x, pixel.y);
     });
   }
 
-  private handleBoardClick(pointer: Phaser.Input.Pointer) {
-    if (!this.room) return;
+  private attachPlayer(player: any, playerId: string) {
+    const color = player.color || 'rojo';
+    this.pawnManager.createPawn(this, playerId, color, player.x, player.y, this.offsetX, this.offsetY);
 
-    const grid = this.pixelToGrid(pointer.x, pointer.y);
-    if (!grid) return;
+    player.onChange(() => {
+      this.pawnManager.movePawnSmooth(this, playerId, player.x, player.y, this.offsetX, this.offsetY);
+    });
+  }
 
-    const { gridX, gridY } = grid;
-    this.room.send('movePawn', { targetX: gridX, targetY: gridY });
+  private setupInputListeners() {
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (!this.room) return;
+
+      const isMyTurn = this.room.sessionId === this.room.state.currentTurnPlayerId;
+      const hasMoves = this.room.state.remainingMoves > 0;
+
+      if (!isMyTurn || !hasMoves) return;
+
+      const grid = this.pixelToGrid(pointer.x, pointer.y);
+      if (!grid) return;
+
+      const { gridX, gridY } = grid;
+      this.room.send('movePawn', { targetX: gridX, targetY: gridY });
+    });
   }
 
   gridToPixel(gridX: number, gridY: number) {
     return {
-      x: BOARD_OFFSET_X + gridX * CELL_SIZE + CELL_SIZE / 2,
-      y: BOARD_OFFSET_Y + gridY * CELL_SIZE + CELL_SIZE / 2
+      x: this.offsetX + gridX * this.tileSize + this.tileSize / 2,
+      y: this.offsetY + gridY * this.tileSize + this.tileSize / 2
     };
   }
 
   pixelToGrid(pixelX: number, pixelY: number) {
-    const localX = pixelX - BOARD_OFFSET_X;
-    const localY = pixelY - BOARD_OFFSET_Y;
+    const localX = pixelX - this.offsetX;
+    const localY = pixelY - this.offsetY;
 
     if (localX < 0 || localY < 0) return null;
 
-    const gridX = Math.floor(localX / CELL_SIZE);
-    const gridY = Math.floor(localY / CELL_SIZE);
+    const gridX = Math.floor(localX / this.tileSize);
+    const gridY = Math.floor(localY / this.tileSize);
 
     if (gridX < 0 || gridX >= BOARD_SIZE || gridY < 0 || gridY >= BOARD_SIZE) return null;
 
