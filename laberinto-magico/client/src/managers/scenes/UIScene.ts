@@ -106,8 +106,8 @@ export class UIScene extends Phaser.Scene {
   private renderScores() {
     const lines: string[] = ['Progreso:'];
 
-    this.room.state.players.forEach((player: any, key: string) => {
-      lines.push(`${player.name}: ${player.score}/5 fichas`);
+    this.room.state.players.forEach((player: { name?: string; score?: number }) => {
+      lines.push(`${player.name || 'Jugador'}: ${player.score || 0}/5 fichas`);
     });
 
     this.scoreListText.setText(lines.join('\n'));
@@ -119,7 +119,9 @@ export class UIScene extends Phaser.Scene {
     const canRoll = isMyTurn && this.room.state.remainingMoves === 0;
 
     this.diceBtn.setAlpha(canRoll ? 1 : 0.4);
-    this.diceBtn.input!.enabled = canRoll;
+    if (this.diceBtn.input) {
+      this.diceBtn.input.enabled = canRoll;
+    }
   }
 
   private showWinModal(winnerName: string) {

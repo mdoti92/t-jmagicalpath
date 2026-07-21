@@ -112,6 +112,17 @@ export class LobbyScene extends Phaser.Scene {
       this.colorButtons.push(button);
     });
 
+    this.statusText = this.add.text(400, 455, 'Listo para empezar', {
+      fontSize: '16px',
+      color: '#cfcfff'
+    }).setOrigin(0.5);
+
+    this.playerListText = this.add.text(400, 500, 'Jugadores conectados:\n- Ninguno aún', {
+      fontSize: '16px',
+      color: '#ffffff',
+      align: 'center'
+    }).setOrigin(0.5);
+
     this.updateColorSelection();
 
     const joinBtn = this.add.rectangle(400, 390, 220, 50, 0x4d94ff)
@@ -150,6 +161,7 @@ export class LobbyScene extends Phaser.Scene {
 
         this.room.state.listen('players', () => {
           this.renderPlayersList();
+          this.updateColorSelection();
         });
 
         this.renderPlayersList();
@@ -161,25 +173,34 @@ export class LobbyScene extends Phaser.Scene {
         this.statusText.setText('No se pudo conectar.');
       }
     });
-
-    this.statusText = this.add.text(400, 455, 'Listo para empezar', {
-      fontSize: '16px',
-      color: '#cfcfff'
-    }).setOrigin(0.5);
-
-    this.playerListText = this.add.text(400, 500, 'Jugadores conectados:\n- Ninguno aún', {
-      fontSize: '16px',
-      color: '#ffffff',
-      align: 'center'
-    }).setOrigin(0.5);
   }
 
   private updateColorSelection() {
+    const occupiedColors = new Set<string>();
+
+    if (this.room?.state.players) {
+      this.room.state.players.forEach((player: { color?: string }) => {
+        if (player.color) {
+          occupiedColors.add(player.color);
+        }
+      });
+    }
+
+    const availableColor = this.getFirstAvailableColor(occupiedColors);
+    if (occupiedColors.has(this.selectedColor) && this.selectedColor !== availableColor) {
+      this.selectedColor = availableColor;
+    }
+
     this.colorButtons.forEach((button, index) => {
       const color = COLORS[index];
+      const isOccupied = occupiedColors.has(color);
       const isSelected = color === this.selectedColor;
+
       button.setFillStyle(isSelected ? this.getColorValue(color) : 0x374151);
-      button.setAlpha(isSelected ? 1 : 0.7);
+      button.setAlpha(isSelected || !isOccupied ? 1 : 0.4);
+      if (button.input) {
+        button.input.enabled = !isOccupied || isSelected;
+      }
     });
   }
 
@@ -187,8 +208,8 @@ export class LobbyScene extends Phaser.Scene {
     if (!this.room) return;
 
     const players: string[] = [];
-    this.room.state.players.forEach((player: any, key: string) => {
-      players.push(`• ${player.name} (${player.color})`);
+    this.room.state.players.forEach((player: { name?: string; color?: string }) => {
+      players.push(`• ${player.name || 'Jugador'} (${player.color || 'sin color'})`);
     });
 
     this.playerListText.setText(`Jugadores conectados:\n${players.length ? players.join('\n') : '- Ninguno aún'}`);
@@ -202,5 +223,9 @@ export class LobbyScene extends Phaser.Scene {
       verde: 0x4dff88
     };
     return map[color] || 0xffffff;
+  }
+
+  private getFirstAvailableColor(occupiedColors: Set<string>) {
+    return COLORS.find((color) => !occupiedColors.has(color)) || 'rojo';
   }
 }
