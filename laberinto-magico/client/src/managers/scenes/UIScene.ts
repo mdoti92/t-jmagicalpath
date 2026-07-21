@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { Room } from 'colyseus.js';
-import { saveMatchResult } from '../services/supabase';
+
+const COLOR_MAP: Record<string, number> = {
+  rojo: 0xff4d4d,
+  azul: 0x4d94ff,
+  amarillo: 0xffdb4d,
+  verde: 0x4dff88
+};
 
 export class UIScene extends Phaser.Scene {
   private room!: Room;
@@ -8,6 +14,9 @@ export class UIScene extends Phaser.Scene {
   private diceBtn!: Phaser.GameObjects.Rectangle;
   private diceText!: Phaser.GameObjects.Text;
   private targetSymbolText!: Phaser.GameObjects.Text;
+  private scoreListText!: Phaser.GameObjects.Text;
+  private banner!: Phaser.GameObjects.Rectangle;
+  private modalContainer?: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: 'UIScene' });
@@ -16,17 +25,16 @@ export class UIScene extends Phaser.Scene {
   create() {
     this.room = this.registry.get('room');
 
-    // Indicator de Turno Activo
-    this.turnText = this.add.text(20, 20, 'Turno de: Esperando...', {
+    this.banner = this.add.rectangle(400, 25, 760, 48, 0x1f2937).setOrigin(0.5, 0);
+    this.turnText = this.add.text(40, 38, 'Turno de: Esperando...', {
       fontSize: '20px',
       color: '#ffffff'
     });
 
-    // Control del Dado
-    this.diceBtn = this.add.rectangle(100, 520, 130, 45, 0x8b6d9c)
+    this.diceBtn = this.add.rectangle(120, 520, 170, 48, 0x8b6d9c)
       .setInteractive({ useHandCursor: true });
 
-    this.diceText = this.add.text(100, 520, '🎲 Tirar Dado', {
+    this.diceText = this.add.text(120, 520, '🎲 Tirar Dado', {
       fontSize: '16px',
       color: '#ffffff'
     }).setOrigin(0.5);
@@ -35,10 +43,15 @@ export class UIScene extends Phaser.Scene {
       if (this.room) this.room.send('rollDice');
     });
 
-    // Visualización del Objetivo Símbolo
     this.targetSymbolText = this.add.text(620, 100, 'Objetivo:\n✨ Cargando', {
       fontSize: '18px',
       color: '#ffdb4d'
+    });
+
+    this.scoreListText = this.add.text(620, 220, 'Progreso:\n', {
+      fontSize: '16px',
+      color: '#ffffff',
+      lineSpacing: 8
     });
 
     this.setupListeners();
@@ -47,21 +60,21 @@ export class UIScene extends Phaser.Scene {
   private setupListeners() {
     if (!this.room) return;
 
-    // Escuchar Cambio de Turno
     this.room.state.listen('currentTurnPlayerId', (currentId: string) => {
       const activePlayer = this.room.state.players.get(currentId);
-      if (activePlayer) {
-        this.turnText.setText(`Turno de: ${activePlayer.name}`);
-      }
+      const playerName = activePlayer ? activePlayer.name : 'Esperando';
+      const color = activePlayer ? activePlayer.color : 'rojo';
 
-      const isMyTurn = this.room.sessionId === currentId;
-      const canRoll = isMyTurn && this.room.state.remainingMoves === 0;
-
-      this.diceBtn.setAlpha(canRoll ? 1 : 0.4);
-      this.diceBtn.input!.enabled = canRoll;
+      this.turnText.setText(`Turno de: ${playerName}`);
+      this.turnText.setColor(COLOR_MAP[color] ? `#${COLOR_MAP[color].toString(16)}` : '#ffffff');
+      this.updateDiceButtonState();
+      this.diceText.setText(this.room.state.diceValue > 0 ? `Dado: ${this.room.state.diceValue}` : '🎲 Tirar Dado');
     });
 
-    // Escuchar Valor del Dado
+    this.room.state.listen('remainingMoves', () => {
+      this.updateDiceButtonState();
+    });
+
     this.room.state.listen('diceValue', (val: number) => {
       if (val > 0) {
         this.diceText.setText(`Dado: ${val}`);
@@ -70,36 +83,60 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    // Escuchar Símbolo Activo
     this.room.state.listen('activeSymbolId', (symbolId: number) => {
       this.targetSymbolText.setText(`Objetivo:\n✨ Ficha #${symbolId}`);
     });
 
-    // Escuchar Fin de Partida
-    this.room.state.listen('status', async (status: string) => {
+    this.room.state.listen('players', () => {
+      this.renderScores();
+    });
+
+    this.room.state.listen('status', (status: string) => {
       if (status === 'FINISHED') {
         const winner = this.room.state.players.get(this.room.state.winnerId);
         const winnerName = winner ? winner.name : 'Jugador';
 
         this.showWinModal(winnerName);
-        await saveMatchResult(winnerName, this.room.state.players.size);
       }
     });
+
+    this.renderScores();
+  }
+
+  private renderScores() {
+    const lines: string[] = ['Progreso:'];
+
+    this.room.state.players.forEach((player: any, key: string) => {
+      lines.push(`${player.name}: ${player.score}/5 fichas`);
+    });
+
+    this.scoreListText.setText(lines.join('\n'));
+  }
+
+  private updateDiceButtonState() {
+    const currentId = this.room.state.currentTurnPlayerId;
+    const isMyTurn = this.room.sessionId === currentId;
+    const canRoll = isMyTurn && this.room.state.remainingMoves === 0;
+
+    this.diceBtn.setAlpha(canRoll ? 1 : 0.4);
+    this.diceBtn.input!.enabled = canRoll;
   }
 
   private showWinModal(winnerName: string) {
-    this.add.rectangle(400, 300, 400, 250, 0x000000, 0.85);
-    
-    this.add.text(400, 240, `🏆 ¡GANADOR!\n${winnerName}`, {
+    if (this.modalContainer) return;
+
+    this.modalContainer = this.add.container(0, 0);
+    const overlay = this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7);
+    const panel = this.add.rectangle(400, 300, 420, 240, 0x111827, 0.95);
+    const title = this.add.text(400, 240, `🏆 ¡Ganador!\n${winnerName}`, {
       fontSize: '28px',
       color: '#ffdb4d',
       align: 'center'
     }).setOrigin(0.5);
 
-    const restartBtn = this.add.rectangle(400, 330, 160, 40, 0x4dff88)
+    const restartBtn = this.add.rectangle(400, 340, 180, 46, 0x4dff88)
       .setInteractive({ useHandCursor: true });
-
-    this.add.text(400, 330, 'Nueva Partida', {
+    const restartText = this.add.text(400, 340, 'Nueva Partida', {
       fontSize: '16px',
       color: '#000000'
     }).setOrigin(0.5);
@@ -110,5 +147,7 @@ export class UIScene extends Phaser.Scene {
       this.scene.stop('BoardScene');
       this.scene.start('LobbyScene');
     });
+
+    this.modalContainer.add([overlay, panel, title, restartBtn, restartText]);
   }
 }
