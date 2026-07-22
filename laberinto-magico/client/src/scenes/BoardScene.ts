@@ -68,7 +68,7 @@ export class BoardScene extends Phaser.Scene {
     this.effectsManager = new EffectsManager();
 
     this.offsetX = (this.cameras.main.width - BOARD_SIZE * this.tileSize) / 2 + 60;
-    this.offsetY = (this.cameras.main.height - BOARD_SIZE * this.tileSize) / 2;
+    this.offsetY = (this.cameras.main.height - BOARD_SIZE * this.tileSize) / 2 + 20;
 
     this.drawBoard();
     this.setupColyseusListeners();
@@ -78,7 +78,7 @@ export class BoardScene extends Phaser.Scene {
   private drawBoard() {
     const boardBg = this.add.rectangle(
       this.cameras.main.centerX + 60, 
-      this.cameras.main.centerY, 
+      this.cameras.main.centerY + 20, 
       560, 
       560, 
       0x1f2a44, 
@@ -121,7 +121,7 @@ export class BoardScene extends Phaser.Scene {
       }
     }
 
-    this.add.text(this.cameras.main.centerX, 40, '🧙 Laberinto Mágico', {
+    this.add.text(this.cameras.main.centerX, 34, '🧙 Laberinto Mágico', {
       fontSize: '22px',
       color: '#ffffff'
     }).setOrigin(0.5);
