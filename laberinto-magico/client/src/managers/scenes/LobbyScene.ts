@@ -38,30 +38,38 @@ export class LobbyScene extends Phaser.Scene {
       color: '#cfcfff'
     }).setOrigin(0.5);
 
-    this.nameLabel = this.add.text(220, 180, 'Nombre:', {
+    // Label Nombre alineado
+    this.nameLabel = this.add.text(220, 188, 'Nombre:', {
       fontSize: '18px',
       color: '#ffffff'
     });
 
+    // 1. Creación del elemento HTML
     const nameInputElement = document.createElement('input');
     nameInputElement.type = 'text';
     nameInputElement.value = `Mago_${Math.floor(Math.random() * 100)}`;
     nameInputElement.placeholder = 'Tu nombre';
-    nameInputElement.style.width = '220px';
+    nameInputElement.style.width = '200px';
     nameInputElement.style.padding = '8px';
     nameInputElement.style.fontSize = '16px';
     nameInputElement.style.borderRadius = '6px';
     nameInputElement.style.border = '1px solid #7f8cff';
+    nameInputElement.style.boxSizing = 'border-box';
+
+    // 2. Phaser lo añade a su contenedor interno de escala
+    this.nameInput = this.add.dom(310, 180, nameInputElement);
+    this.nameInput.setOrigin(0, 0); // Alineado perfectamente al lado del label
 
     if ((this.sys.game as any).domContainer) {
-      this.nameInput = this.add.dom(400, 180).createFromHTML(nameInputElement.outerHTML);
-      this.nameInput.setOrigin(0.5, 0);
+      // Posición X ajustada a 310 para colocarse al lado del texto
+      this.nameInput = this.add.dom(310, 180).createFromHTML(nameInputElement.outerHTML);
+      this.nameInput.setOrigin(0, 0); // Origin top-left para alineación precisa
     } else {
       const parent = document.getElementById('game-container') || document.body;
       const wrapper = document.createElement('div');
       wrapper.innerHTML = nameInputElement.outerHTML;
       wrapper.style.position = 'absolute';
-      wrapper.style.left = 'calc(50% - 110px)';
+      wrapper.style.left = '310px';
       wrapper.style.top = '180px';
       parent.appendChild(wrapper);
       this.nameInput = { node: wrapper.firstElementChild } as unknown as Phaser.GameObjects.DOMElement;
@@ -146,7 +154,14 @@ export class LobbyScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     joinBtn.on('pointerdown', async () => {
-      const nameValue = (this.nameInput.node as HTMLInputElement | undefined)?.value?.trim() || `Mago_${Math.floor(Math.random() * 100)}`;
+      let inputEl: HTMLInputElement | null = null;
+      if (this.nameInput?.node) {
+        inputEl = (this.nameInput.node.tagName === 'INPUT' 
+          ? this.nameInput.node 
+          : this.nameInput.node.querySelector('input')) as HTMLInputElement;
+      }
+
+      const nameValue = inputEl?.value?.trim() || `Mago_${Math.floor(Math.random() * 100)}`;
       const colorValue = this.selectedColor;
 
       try {
@@ -155,12 +170,12 @@ export class LobbyScene extends Phaser.Scene {
         this.statusText.setText('Conectando a la sala...');
 
         const reservation = await this.client.http.post('/matchmake/joinOrCreate/laberinto_room', {
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: nameValue,
-                color: colorValue,
-                playerCount: this.playerCount
-            })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: nameValue,
+            color: colorValue,
+            playerCount: this.playerCount
+          })
         });
 
         const roomData = reservation?.data?.room ?? reservation?.data;
@@ -299,7 +314,7 @@ export class LobbyScene extends Phaser.Scene {
         });
       }
     } catch {
-      // Ignora errores si el estado no expone los valores como objeto
+      // Ignora errores
     }
 
     return collected;
