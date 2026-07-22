@@ -38,7 +38,7 @@ export class BoardScene extends Phaser.Scene {
     this.pawnManager = new PawnManager();
     this.effectsManager = new EffectsManager();
 
-    this.offsetX = (this.cameras.main.width - BOARD_SIZE * this.tileSize) / 2;
+    this.offsetX = (this.cameras.main.width - BOARD_SIZE * this.tileSize) / 2 + 60;
     this.offsetY = (this.cameras.main.height - BOARD_SIZE * this.tileSize) / 2;
 
     this.drawBoard();
@@ -47,7 +47,8 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private drawBoard() {
-    this.add.rectangle(this.cameras.main.centerX, this.cameras.main.centerY, 560, 560, 0x1f2a44, 0.95).setOrigin(0.5);
+    const boardBg = this.add.rectangle(this.cameras.main.centerX + 60, this.cameras.main.centerY, 560, 560, 0x1f2a44, 0.95).setOrigin(0.5);
+    boardBg.setDepth(-1);
 
     this.boardGrid = this.add.container(0, 0);
 

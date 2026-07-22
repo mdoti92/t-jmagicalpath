@@ -43,15 +43,17 @@ export class UIScene extends Phaser.Scene {
       if (this.room) this.room.send('rollDice');
     });
 
-    this.targetSymbolText = this.add.text(620, 100, 'Objetivo:\n✨ Cargando', {
+    this.targetSymbolText = this.add.text(40, 100, 'Objetivo:\n✨ Cargando', {
       fontSize: '18px',
-      color: '#ffdb4d'
+      color: '#ffdb4d',
+      wordWrap: { width: 240 }
     });
 
-    this.scoreListText = this.add.text(620, 220, 'Progreso:\n', {
+    this.scoreListText = this.add.text(40, 180, 'Progreso:\n', {
       fontSize: '16px',
       color: '#ffffff',
-      lineSpacing: 8
+      lineSpacing: 8,
+      wordWrap: { width: 240 }
     });
 
     this.setupListeners();
