@@ -99,6 +99,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     player.score = 0;
 
     this.state.players.set(client.sessionId, player);
+    this.broadcast("player-list-update", { players: this.getPlayerSnapshot() });
 
     if (!this.state.currentTurnPlayerId) {
       this.state.currentTurnPlayerId = client.sessionId;
@@ -114,6 +115,8 @@ export class GameRoom extends Room<{ state: GameState }> {
     const wasCurrent = this.state.currentTurnPlayerId === leavingId;
     this.state.players.delete(leavingId);
 
+    this.broadcast("player-list-update", { players: this.getPlayerSnapshot() });
+
     if (this.state.players.size === 0) {
       this.state.status = "LOBBY";
       this.state.currentTurnPlayerId = "";
@@ -125,6 +128,13 @@ export class GameRoom extends Room<{ state: GameState }> {
     if (wasCurrent) {
       this.nextTurn();
     }
+  }
+
+  private getPlayerSnapshot() {
+    return Array.from(this.state.players.values()).map((player) => ({
+      name: player.name,
+      color: player.color
+    }));
   }
 
   private initializeBag() {
@@ -180,9 +190,6 @@ export class GameRoom extends Room<{ state: GameState }> {
     }
 
     this.revealNextSymbol();
-    if (this.state.status === "PLAYING") {
-      this.nextTurn();
-    }
   }
 
   private revealNextSymbol() {

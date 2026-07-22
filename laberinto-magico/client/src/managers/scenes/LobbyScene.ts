@@ -194,6 +194,11 @@ export class LobbyScene extends Phaser.Scene {
           this.updateColorSelection();
         });
 
+        this.room.onMessage('player-list-update', (payload: { players?: Array<{ name?: string; color?: string }> }) => {
+          this.renderPlayersList(payload.players);
+          this.updateColorSelection();
+        });
+
         this.renderPlayersList();
         this.statusText.setText('Esperando jugadores...');
       } catch (e) {
@@ -248,10 +253,10 @@ export class LobbyScene extends Phaser.Scene {
     });
   }
 
-  private renderPlayersList() {
+  private renderPlayersList(playersOverride?: Array<{ name?: string; color?: string }>) {
     if (!this.room) return;
 
-    const players = this.getPlayers();
+    const players = playersOverride ?? this.getPlayers();
     const playerLines: string[] = players.map((player) => {
       return `• ${player?.name || 'Jugador'} (${player?.color || 'sin color'})`;
     });
@@ -269,15 +274,30 @@ export class LobbyScene extends Phaser.Scene {
     const collected: Array<{ name?: string; color?: string }> = [];
 
     try {
-      const entries = Object.entries(playersState as Record<string, unknown>);
-      entries.forEach(([, value]) => {
-        if (value && typeof value === 'object') {
-          const player = value as { name?: string; color?: string };
-          if (player.name || player.color) {
+      if (typeof playersState.forEach === 'function') {
+        playersState.forEach((player: { name?: string; color?: string }) => {
+          if (player && (player.name || player.color)) {
             collected.push(player);
           }
-        }
-      });
+        });
+      } else if (typeof playersState.entries === 'function') {
+        const entries = Array.from(playersState.entries() as Iterable<[unknown, unknown]>);
+        entries.forEach((entry) => {
+          const player = entry[1] as { name?: string; color?: string } | undefined;
+          if (player && (player.name || player.color)) {
+            collected.push(player);
+          }
+        });
+      } else {
+        Object.entries(playersState as Record<string, unknown>).forEach(([, value]) => {
+          if (value && typeof value === 'object') {
+            const player = value as { name?: string; color?: string };
+            if (player.name || player.color) {
+              collected.push(player);
+            }
+          }
+        });
+      }
     } catch {
       // Ignora errores si el estado no expone los valores como objeto
     }
