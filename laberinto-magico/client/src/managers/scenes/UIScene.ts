@@ -61,30 +61,33 @@ export class UIScene extends Phaser.Scene {
     if (!this.room) return;
 
     this.room.onStateChange(() => {
-      const currentId = this.room.state.currentTurnPlayerId;
-      const activePlayer = this.room.state.players.get(currentId);
-      const playerName = activePlayer ? activePlayer.name : 'Esperando';
-      const color = activePlayer ? activePlayer.color : 'rojo';
-
-      this.turnText.setText(`Turno de: ${playerName}`);
-      this.turnText.setColor(COLOR_MAP[color] ? `#${COLOR_MAP[color].toString(16)}` : '#ffffff');
-
-      const diceValue = this.room.state.diceValue;
-      this.diceText.setText(diceValue > 0 ? `Dado: ${diceValue}` : '🎲 Tirar Dado');
-
-      this.targetSymbolText.setText(`Objetivo:\n✨ Ficha #${this.room.state.activeSymbolId}`);
-      this.renderScores();
-      this.updateDiceButtonState();
-
-      if (this.room.state.status === 'FINISHED') {
-        const winner = this.room.state.players.get(this.room.state.winnerId);
-        const winnerName = winner ? winner.name : 'Jugador';
-        this.showWinModal(winnerName);
-      }
+      this.syncUIWithState();
     });
 
+    this.syncUIWithState();
+  }
+
+  private syncUIWithState() {
+    const currentId = this.room.state.currentTurnPlayerId;
+    const activePlayer = this.room.state.players.get(currentId);
+    const playerName = activePlayer ? activePlayer.name : 'Esperando';
+    const color = activePlayer ? activePlayer.color : 'rojo';
+
+    this.turnText.setText(`Turno de: ${playerName}`);
+    this.turnText.setColor(COLOR_MAP[color] ? `#${COLOR_MAP[color].toString(16)}` : '#ffffff');
+
+    const diceValue = this.room.state.diceValue;
+    this.diceText.setText(diceValue > 0 ? `Dado: ${diceValue}` : '🎲 Tirar Dado');
+
+    this.targetSymbolText.setText(`Objetivo:\n✨ Ficha #${this.room.state.activeSymbolId}`);
     this.renderScores();
     this.updateDiceButtonState();
+
+    if (this.room.state.status === 'FINISHED') {
+      const winner = this.room.state.players.get(this.room.state.winnerId);
+      const winnerName = winner ? winner.name : 'Jugador';
+      this.showWinModal(winnerName);
+    }
   }
 
   private renderScores() {
