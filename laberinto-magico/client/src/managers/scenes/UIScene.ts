@@ -25,10 +25,9 @@ export class UIScene extends Phaser.Scene {
   create() {
     this.room = this.registry.get('room');
 
-    this.banner = this.add.rectangle(400, 25, 760, 48, 0x1f2937).setOrigin(0.5, 0);
     this.turnText = this.add.text(40, 38, 'Turno de: Esperando...', {
       fontSize: '20px',
-      color: '#ffffff'
+      fontStyle: 'bold',
     });
 
     this.diceBtn = this.add.rectangle(120, 520, 170, 48, 0x8b6d9c)
