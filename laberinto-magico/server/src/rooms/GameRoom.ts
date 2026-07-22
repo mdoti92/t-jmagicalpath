@@ -81,12 +81,17 @@ export class GameRoom extends Room<{ state: GameState }> {
 
   onJoin(client: Client, options?: { name?: string; color?: string; playerCount?: number }) {
     const index = this.state.players.size;
-    const spawn = SPAWN_POSITIONS[index] ?? SPAWN_POSITIONS[0];
+    const occupiedColors = new Set(Array.from(this.state.players.values()).map((player) => player.color));
+    const requestedColor = options?.color;
+    const selectedColor = requestedColor && !occupiedColors.has(requestedColor)
+      ? requestedColor
+      : Array.from(SPAWN_POSITIONS.map((spawn) => spawn.color)).find((color) => !occupiedColors.has(color)) || SPAWN_POSITIONS[0].color;
+    const spawn = SPAWN_POSITIONS.find((item) => item.color === selectedColor) ?? SPAWN_POSITIONS[index] ?? SPAWN_POSITIONS[0];
 
     const player = new Player();
     player.id = client.sessionId;
     player.name = options?.name || `Jugador ${this.state.players.size + 1}`;
-    player.color = spawn.color;
+    player.color = selectedColor as Player['color'];
     player.startX = spawn.x;
     player.startY = spawn.y;
     player.x = spawn.x;

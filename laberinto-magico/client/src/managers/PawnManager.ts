@@ -4,7 +4,8 @@ const COLOR_MAP: Record<string, number> = {
   rojo: 0xff4d4d,
   azul: 0x4d94ff,
   amarillo: 0xffdb4d,
-  verde: 0x4dff88
+  verde: 0x4dff88,
+  default: 0xffffff
 };
 
 export class PawnManager {
@@ -14,7 +15,8 @@ export class PawnManager {
   createPawn(scene: Phaser.Scene, playerId: string, color: string, gridX: number, gridY: number, offsetX: number, offsetY: number) {
     if (this.pawns.has(playerId)) return;
 
-    const hexColor = COLOR_MAP[color] || 0xffffff;
+    const normalizedColor = (color || 'default').toLowerCase();
+    const hexColor = COLOR_MAP[normalizedColor] ?? COLOR_MAP.default;
     const pixelX = offsetX + gridX * 80 + 40;
     const pixelY = offsetY + gridY * 80 + 40;
 
