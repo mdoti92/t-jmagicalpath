@@ -7,12 +7,12 @@ const CELL_SIZE = 80;
 const BOARD_SIZE = 6;
 
 const BOARD_SYMBOLS = [
-  [0, 1, 2, 3, 4, 5],
-  [6, 7, 8, 9, 10, 11],
-  [12, 13, 14, 15, 16, 17],
-  [18, 19, 20, 21, 22, 23],
-  [0, 6, 12, 18, 1, 7],
-  [13, 5, 11, 17, 23, 2]
+  [-1, -1, 0, 1, -1, -1],
+  [-1, 3, 4, 5, 6, -1],
+  [7, 8, 9, 10, 11, 12],
+  [13, 14, 15, 16, 17, 18],
+  [-1, 19, 20, 21, 22, -1],
+  [-1, -1, 23, 24, -1, -1]
 ];
 
 export class BoardScene extends Phaser.Scene {
@@ -57,8 +57,12 @@ export class BoardScene extends Phaser.Scene {
         const symbolId = BOARD_SYMBOLS[y][x];
         const cellBg = this.add.rectangle(pixel.x, pixel.y, this.tileSize - 6, this.tileSize - 6, 0x2f4b7c, 0.9);
         this.boardGrid.add(cellBg);
-        this.cellBySymbolId.set(symbolId, cellBg);
-        const label = this.add.text(pixel.x, pixel.y, `✨ ${symbolId}`, {
+
+        if (symbolId >= 0) {
+          this.cellBySymbolId.set(symbolId, cellBg);
+        }
+
+        const label = this.add.text(pixel.x, pixel.y, symbolId >= 0 ? `✨ ${symbolId}` : ' ', {
           fontSize: '14px',
           color: '#fef3c7'
         }).setOrigin(0.5);

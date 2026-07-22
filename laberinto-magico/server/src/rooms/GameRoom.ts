@@ -124,7 +124,11 @@ export class GameRoom extends Room<{ state: GameState }> {
 
   private initializeBag() {
     this.state.bag = new ArraySchema<number>();
-    const values = Array.from({ length: 24 }, (_, i) => i);
+    const values = Array.from(
+      new Set(
+        BOARD_SYMBOLS.flat().filter((symbolId) => symbolId >= 0)
+      )
+    );
     this.shuffleArray(values);
     values.forEach((value) => this.state.bag.push(value));
   }
@@ -189,7 +193,14 @@ export class GameRoom extends Room<{ state: GameState }> {
         return;
       }
 
-      this.state.activeSymbolId = nextSymbol;
+      const symbolIdToUse = nextSymbol;
+      const targetCell = BOARD_SYMBOLS.some((row) => row.includes(symbolIdToUse));
+
+      if (!targetCell) {
+        continue;
+      }
+
+      this.state.activeSymbolId = symbolIdToUse;
       let collected = false;
 
       for (const player of this.state.players.values()) {
