@@ -21,6 +21,7 @@ export class BoardScene extends Phaser.Scene {
   private room!: Room;
   private boardGrid!: Phaser.GameObjects.Container;
   private symbolLabels: Phaser.GameObjects.Text[] = [];
+  private cellBySymbolId: Map<number, Phaser.GameObjects.Rectangle> = new Map();
   private tileSize: number = CELL_SIZE;
   private offsetX: number = 0;
   private offsetY: number = 0;
@@ -53,10 +54,10 @@ export class BoardScene extends Phaser.Scene {
     for (let y = 0; y < BOARD_SIZE; y++) {
       for (let x = 0; x < BOARD_SIZE; x++) {
         const pixel = this.gridToPixel(x, y);
+        const symbolId = BOARD_SYMBOLS[y][x];
         const cellBg = this.add.rectangle(pixel.x, pixel.y, this.tileSize - 6, this.tileSize - 6, 0x2f4b7c, 0.9);
         this.boardGrid.add(cellBg);
-
-        const symbolId = BOARD_SYMBOLS[y][x];
+        this.cellBySymbolId.set(symbolId, cellBg);
         const label = this.add.text(pixel.x, pixel.y, `✨ ${symbolId}`, {
           fontSize: '14px',
           color: '#fef3c7'
@@ -70,6 +71,8 @@ export class BoardScene extends Phaser.Scene {
       fontSize: '22px',
       color: '#ffffff'
     }).setOrigin(0.5);
+
+    this.updateTargetHighlight();
   }
 
   private setupColyseusListeners() {
@@ -96,6 +99,7 @@ export class BoardScene extends Phaser.Scene {
 
     this.room.onStateChange(() => {
       syncPlayers();
+      this.updateTargetHighlight();
 
       this.room.state.players.forEach((player: any, playerId: string) => {
         const pawnSprite = this.pawnManager.getPawnSprite(playerId);
@@ -130,6 +134,17 @@ export class BoardScene extends Phaser.Scene {
   private attachPlayer(player: any, playerId: string) {
     const color = player.color || 'rojo';
     this.pawnManager.createPawn(this, playerId, color, player.x, player.y, this.offsetX, this.offsetY);
+  }
+
+  private updateTargetHighlight() {
+    const targetSymbolId = this.room?.state?.activeSymbolId;
+
+    this.cellBySymbolId.forEach((cell, symbolId) => {
+      const isTarget = symbolId === targetSymbolId;
+      cell.setFillStyle(isTarget ? 0x4c6ef5 : 0x2f4b7c);
+      cell.setAlpha(isTarget ? 1 : 0.9);
+      cell.setStrokeStyle(isTarget ? 4 : 0, 0xffffff);
+    });
   }
 
   private setupInputListeners() {
