@@ -60,6 +60,10 @@ export class PawnManager {
     return this.pawns.get(playerId);
   }
 
+  getAllPawnIds() {
+    return Array.from(this.pawns.keys());
+  }
+
   removePawn(playerId: string) {
     const pawn = this.pawns.get(playerId);
     if (pawn) {

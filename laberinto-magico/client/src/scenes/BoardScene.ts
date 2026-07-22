@@ -75,16 +75,34 @@ export class BoardScene extends Phaser.Scene {
   private setupColyseusListeners() {
     if (!this.room) return;
 
-    this.room.state.players.forEach((player: any, playerId: string) => {
-      this.attachPlayer(player, playerId);
-    });
+    const syncPlayers = () => {
+      const currentPlayers = this.room.state.players;
+      const existingIds = new Set(this.pawnManager.getAllPawnIds?.() ?? []);
 
-    this.room.state.players.onAdd((player: any, playerId: string) => {
-      this.attachPlayer(player, playerId);
-    });
+      currentPlayers.forEach((player: any, playerId: string) => {
+        if (!existingIds.has(playerId)) {
+          this.attachPlayer(player, playerId);
+        }
+      });
 
-    this.room.state.players.onRemove((player: any, playerId: string) => {
-      this.pawnManager.removePawn(playerId);
+      existingIds.forEach((playerId) => {
+        if (!currentPlayers.has(playerId)) {
+          this.pawnManager.removePawn(playerId);
+        }
+      });
+    };
+
+    syncPlayers();
+
+    this.room.onStateChange(() => {
+      syncPlayers();
+
+      this.room.state.players.forEach((player: any, playerId: string) => {
+        const pawnSprite = this.pawnManager.getPawnSprite(playerId);
+        if (pawnSprite) {
+          this.pawnManager.movePawnSmooth(this, playerId, player.x, player.y, this.offsetX, this.offsetY);
+        }
+      });
     });
 
     this.room.onMessage('WALL_HIT', (payload: { playerId: string; startX: number; startY: number }) => {
@@ -112,10 +130,6 @@ export class BoardScene extends Phaser.Scene {
   private attachPlayer(player: any, playerId: string) {
     const color = player.color || 'rojo';
     this.pawnManager.createPawn(this, playerId, color, player.x, player.y, this.offsetX, this.offsetY);
-
-    player.onChange(() => {
-      this.pawnManager.movePawnSmooth(this, playerId, player.x, player.y, this.offsetX, this.offsetY);
-    });
   }
 
   private setupInputListeners() {
