@@ -163,6 +163,7 @@ export class GameRoom extends Room<{ state: GameState }> {
 
     player.score += 1;
     this.state.remainingMoves = 0;
+    this.state.diceValue = 0;
 
     if (player.score >= 5) {
       this.endGame(player);
