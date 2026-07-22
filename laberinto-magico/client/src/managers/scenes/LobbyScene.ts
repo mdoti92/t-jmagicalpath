@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Client, Room } from 'colyseus.js';
+import { Client, Room, SeatReservation } from 'colyseus.js';
 
 const COLORS = ['rojo', 'azul', 'amarillo', 'verde'] as const;
 const COLOR_LABELS: Record<string, string> = {
@@ -153,24 +153,41 @@ export class LobbyScene extends Phaser.Scene {
         joinBtn.setFillStyle(0x6b7280);
         this.statusText.setText('Conectando a la sala...');
 
-        this.room = await this.client.joinOrCreate('laberinto_room', {
-          name: nameValue,
-          color: colorValue,
-          playerCount: this.playerCount
+        const reservation = await this.client.http.post('/matchmake/joinOrCreate/laberinto_room', {
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: nameValue,
+                color: colorValue,
+                playerCount: this.playerCount
+            })
         });
+
+        const roomData = reservation?.data?.room ?? reservation?.data;
+
+        const formattedReservation: SeatReservation = {
+          sessionId: reservation?.data?.sessionId,
+          room: {
+            name: roomData?.name,
+            roomId: roomData?.roomId,
+            clients: roomData?.clients ?? 0,
+            maxClients: roomData?.maxClients ?? this.playerCount
+          }
+        };
+
+        this.room = await this.client.consumeSeatReservation(formattedReservation);
 
         this.registry.set('room', this.room);
         this.registry.set('playerName', nameValue);
         this.registry.set('playerColor', colorValue);
 
-        this.room.state.listen('status', (status: string) => {
+        this.room.onStateChange(() => {
+          const roomState = this.room?.state;
+          const status = roomState?.status ?? '';
           if (status === 'PLAYING') {
             this.scene.start('BoardScene');
             this.scene.launch('UIScene');
           }
-        });
 
-        this.room.state.listen('players', () => {
           this.renderPlayersList();
           this.updateColorSelection();
         });
@@ -224,25 +241,20 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private getPlayers(): Array<{ name?: string; color?: string }> {
-    const playersState = this.room?.state?.players as unknown as {
-      values?: () => Array<{ name?: string; color?: string } | undefined> | Iterable<{ name?: string; color?: string } | undefined>;
-      forEach?: (callback: (player: { name?: string; color?: string } | undefined, key?: string) => void) => void;
-      [Symbol.iterator]?: () => IterableIterator<{ name?: string; color?: string } | undefined>;
-    } | undefined;
+    const playersState = this.room?.state?.players as any;
 
     if (!playersState) {
       return [];
     }
 
     if (typeof playersState.values === 'function') {
-      const values = playersState.values();
-      const array = Array.isArray(values) ? values : Array.from(values ?? []);
-      return array.filter((player): player is { name?: string; color?: string } => Boolean(player));
+      const values = playersState.values() as Array<{ name?: string; color?: string } | undefined>;
+      return values.filter((player): player is { name?: string; color?: string } => Boolean(player));
     }
 
     if (typeof playersState.forEach === 'function') {
       const collected: Array<{ name?: string; color?: string }> = [];
-      playersState.forEach((player) => {
+      playersState.forEach((player: { name?: string; color?: string } | undefined) => {
         if (player) {
           collected.push(player);
         }
@@ -251,7 +263,7 @@ export class LobbyScene extends Phaser.Scene {
     }
 
     if (typeof playersState[Symbol.iterator] === 'function') {
-      return Array.from(playersState).filter((player): player is { name?: string; color?: string } => Boolean(player));
+      return Array.from(playersState as Iterable<{ name?: string; color?: string } | undefined>).filter(Boolean) as Array<{ name?: string; color?: string }>;
     }
 
     return [];

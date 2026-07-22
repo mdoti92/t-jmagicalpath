@@ -60,47 +60,31 @@ export class UIScene extends Phaser.Scene {
   private setupListeners() {
     if (!this.room) return;
 
-    this.room.state.listen('currentTurnPlayerId', (currentId: string) => {
+    this.room.onStateChange(() => {
+      const currentId = this.room.state.currentTurnPlayerId;
       const activePlayer = this.room.state.players.get(currentId);
       const playerName = activePlayer ? activePlayer.name : 'Esperando';
       const color = activePlayer ? activePlayer.color : 'rojo';
 
       this.turnText.setText(`Turno de: ${playerName}`);
       this.turnText.setColor(COLOR_MAP[color] ? `#${COLOR_MAP[color].toString(16)}` : '#ffffff');
-      this.updateDiceButtonState();
-      this.diceText.setText(this.room.state.diceValue > 0 ? `Dado: ${this.room.state.diceValue}` : '🎲 Tirar Dado');
-    });
 
-    this.room.state.listen('remainingMoves', () => {
-      this.updateDiceButtonState();
-    });
+      const diceValue = this.room.state.diceValue;
+      this.diceText.setText(diceValue > 0 ? `Dado: ${diceValue}` : '🎲 Tirar Dado');
 
-    this.room.state.listen('diceValue', (val: number) => {
-      if (val > 0) {
-        this.diceText.setText(`Dado: ${val}`);
-      } else {
-        this.diceText.setText('🎲 Tirar Dado');
-      }
-    });
-
-    this.room.state.listen('activeSymbolId', (symbolId: number) => {
-      this.targetSymbolText.setText(`Objetivo:\n✨ Ficha #${symbolId}`);
-    });
-
-    this.room.state.listen('players', () => {
+      this.targetSymbolText.setText(`Objetivo:\n✨ Ficha #${this.room.state.activeSymbolId}`);
       this.renderScores();
-    });
+      this.updateDiceButtonState();
 
-    this.room.state.listen('status', (status: string) => {
-      if (status === 'FINISHED') {
+      if (this.room.state.status === 'FINISHED') {
         const winner = this.room.state.players.get(this.room.state.winnerId);
         const winnerName = winner ? winner.name : 'Jugador';
-
         this.showWinModal(winnerName);
       }
     });
 
     this.renderScores();
+    this.updateDiceButtonState();
   }
 
   private renderScores() {
