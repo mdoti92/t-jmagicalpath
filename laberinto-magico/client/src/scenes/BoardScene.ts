@@ -15,6 +15,35 @@ const BOARD_SYMBOLS = [
   [-1, -1, 23, 24, -1, -1]
 ];
 
+// Símbolos reales de El Laberinto Mágico
+const LABYRINTH_SYMBOLS: Record<number, { emoji: string; name: string }> = {
+  0:  { emoji: '🦉', name: 'Búho' },
+  1:  { emoji: '🦇', name: 'Murciélago' },
+  2:  { emoji: '🕷️', name: 'Araña' },
+  3:  { emoji: '🐸', name: 'Sapo' },
+  4:  { emoji: '🧙‍♂️', name: 'Sombrero de mago' },
+  5:  { emoji: '🪄', name: 'Varita mágica' },
+  6:  { emoji: '🧪', name: 'Poción' },
+  7:  { emoji: '🗝️', name: 'Llave' },
+  8:  { emoji: '📖', name: 'Grimorio' },
+  9:  { emoji: '🕯️', name: 'Vela' },
+  10: { emoji: '🔮', name: 'Bola de cristal' },
+  11: { emoji: '🐉', name: 'Dragón' },
+  12: { emoji: '💀', name: 'Calavera' },
+  13: { emoji: '👻', name: 'Fantasma' },
+  14: { emoji: '🐍', name: 'Serpiente' },
+  15: { emoji: '🪲', name: 'Escarabajo' },
+  16: { emoji: '👑', name: 'Corona' },
+  17: { emoji: '🔥', name: 'Fuego' },
+  18: { emoji: '🪙', name: 'Moneda' },
+  19: { emoji: '🪶', name: 'Pluma' },
+  20: { emoji: '💍', name: 'Anillo' },
+  21: { emoji: '🌙', name: 'Luna' },
+  22: { emoji: '🐈‍⬛', name: 'Gato negro' },
+  23: { emoji: '📜', name: 'Pergamino' },
+  24: { emoji: '🧚‍♀️', name: 'Hada' }
+};
+
 export class BoardScene extends Phaser.Scene {
   private pawnManager!: PawnManager;
   private effectsManager!: EffectsManager;
@@ -47,7 +76,14 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private drawBoard() {
-    const boardBg = this.add.rectangle(this.cameras.main.centerX + 60, this.cameras.main.centerY, 560, 560, 0x1f2a44, 0.95).setOrigin(0.5);
+    const boardBg = this.add.rectangle(
+      this.cameras.main.centerX + 60, 
+      this.cameras.main.centerY, 
+      560, 
+      560, 
+      0x1f2a44, 
+      0.95
+    ).setOrigin(0.5);
     boardBg.setDepth(-1);
 
     this.boardGrid = this.add.container(0, 0);
@@ -56,17 +92,30 @@ export class BoardScene extends Phaser.Scene {
       for (let x = 0; x < BOARD_SIZE; x++) {
         const pixel = this.gridToPixel(x, y);
         const symbolId = BOARD_SYMBOLS[y][x];
-        const cellBg = this.add.rectangle(pixel.x, pixel.y, this.tileSize - 6, this.tileSize - 6, 0x2f4b7c, 0.9);
+
+        const cellBg = this.add.rectangle(
+          pixel.x, 
+          pixel.y, 
+          this.tileSize - 6, 
+          this.tileSize - 6, 
+          0x2f4b7c, 
+          0.9
+        );
         this.boardGrid.add(cellBg);
 
         if (symbolId >= 0) {
           this.cellBySymbolId.set(symbolId, cellBg);
         }
 
-        const label = this.add.text(pixel.x, pixel.y, symbolId >= 0 ? `✨ ${symbolId}` : ' ', {
-          fontSize: '14px',
-          color: '#fef3c7'
+        // Dibuja el emoji correspondiente si existe un symbolId >= 0
+        const symbolData = symbolId >= 0 ? LABYRINTH_SYMBOLS[symbolId] : null;
+        const symbolText = symbolData ? symbolData.emoji : ' ';
+
+        const label = this.add.text(pixel.x, pixel.y, symbolText, {
+          fontSize: '26px',
+          color: '#ffffff'
         }).setOrigin(0.5);
+
         this.boardGrid.add(label);
         this.symbolLabels.push(label);
       }
