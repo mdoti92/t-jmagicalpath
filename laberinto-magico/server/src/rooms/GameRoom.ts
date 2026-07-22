@@ -79,13 +79,13 @@ export class GameRoom extends Room<{ state: GameState }> {
     });
   }
 
-  onJoin(client: Client, options: { name?: string }) {
+  onJoin(client: Client, options?: { name?: string; color?: string; playerCount?: number }) {
     const index = this.state.players.size;
     const spawn = SPAWN_POSITIONS[index] ?? SPAWN_POSITIONS[0];
 
     const player = new Player();
     player.id = client.sessionId;
-    player.name = options.name || `Jugador ${this.state.players.size + 1}`;
+    player.name = options?.name || `Jugador ${this.state.players.size + 1}`;
     player.color = spawn.color;
     player.startX = spawn.x;
     player.startY = spawn.y;

@@ -155,21 +155,56 @@ export class LobbyScene extends Phaser.Scene {
         }).setOrigin(0.5);
     }
     updateColorSelection() {
+        const occupiedColors = new Set();
+        this.getPlayers().forEach((player) => {
+            if (player.color) {
+                occupiedColors.add(player.color);
+            }
+        });
+        const availableColor = this.getFirstAvailableColor(occupiedColors);
+        if (occupiedColors.has(this.selectedColor) && this.selectedColor !== availableColor) {
+            this.selectedColor = availableColor;
+        }
         this.colorButtons.forEach((button, index) => {
             const color = COLORS[index];
+            const isOccupied = occupiedColors.has(color);
             const isSelected = color === this.selectedColor;
             button.setFillStyle(isSelected ? this.getColorValue(color) : 0x374151);
-            button.setAlpha(isSelected ? 1 : 0.7);
+            button.setAlpha(isSelected || !isOccupied ? 1 : 0.4);
+            if (button.input) {
+                button.input.enabled = !isOccupied || isSelected;
+            }
         });
     }
     renderPlayersList() {
         if (!this.room)
             return;
-        const players = [];
-        this.room.state.players.forEach((player, key) => {
-            players.push(`• ${player.name} (${player.color})`);
-        });
+        const players = this.getPlayers().map((player) => `• ${player?.name || 'Jugador'} (${player?.color || 'sin color'})`);
         this.playerListText.setText(`Jugadores conectados:\n${players.length ? players.join('\n') : '- Ninguno aún'}`);
+    }
+    getPlayers() {
+        const playersState = this.room?.state?.players;
+        if (!playersState) {
+            return [];
+        }
+        if (typeof playersState.values === 'function') {
+            const values = playersState.values();
+            const array = Array.isArray(values) ? values : Array.from(values ?? []);
+            return array.filter((player) => Boolean(player));
+        }
+        if (typeof playersState.forEach === 'function') {
+            const collected = [];
+            playersState.forEach((player) => {
+                if (player) {
+                    collected.push(player);
+                }
+            });
+            return collected;
+        }
+        if (typeof playersState[Symbol.iterator] === 'function') {
+            return Array.from(playersState).filter((player) => Boolean(player));
+        }
+        return [];
     }
     getColorValue(color) {
         const map = {
@@ -179,5 +214,8 @@ export class LobbyScene extends Phaser.Scene {
             verde: 0x4dff88
         };
         return map[color] || 0xffffff;
+    }
+    getFirstAvailableColor(occupiedColors) {
+        return COLORS.find((color) => !occupiedColors.has(color)) || 'rojo';
     }
 }

@@ -189,13 +189,11 @@ export class LobbyScene extends Phaser.Scene {
   private updateColorSelection() {
     const occupiedColors = new Set<string>();
 
-    if (this.room?.state.players) {
-      this.room.state.players.forEach((player: { color?: string }) => {
-        if (player.color) {
-          occupiedColors.add(player.color);
-        }
-      });
-    }
+    this.getPlayers().forEach((player) => {
+      if (player.color) {
+        occupiedColors.add(player.color);
+      }
+    });
 
     const availableColor = this.getFirstAvailableColor(occupiedColors);
     if (occupiedColors.has(this.selectedColor) && this.selectedColor !== availableColor) {
@@ -218,12 +216,45 @@ export class LobbyScene extends Phaser.Scene {
   private renderPlayersList() {
     if (!this.room) return;
 
-    const players: string[] = [];
-    this.room.state.players.forEach((player: { name?: string; color?: string }) => {
-      players.push(`• ${player.name || 'Jugador'} (${player.color || 'sin color'})`);
+    const players: string[] = this.getPlayers().map((player) => {
+      return `• ${player?.name || 'Jugador'} (${player?.color || 'sin color'})`;
     });
 
     this.playerListText.setText(`Jugadores conectados:\n${players.length ? players.join('\n') : '- Ninguno aún'}`);
+  }
+
+  private getPlayers(): Array<{ name?: string; color?: string }> {
+    const playersState = this.room?.state?.players as unknown as {
+      values?: () => Array<{ name?: string; color?: string } | undefined> | Iterable<{ name?: string; color?: string } | undefined>;
+      forEach?: (callback: (player: { name?: string; color?: string } | undefined, key?: string) => void) => void;
+      [Symbol.iterator]?: () => IterableIterator<{ name?: string; color?: string } | undefined>;
+    } | undefined;
+
+    if (!playersState) {
+      return [];
+    }
+
+    if (typeof playersState.values === 'function') {
+      const values = playersState.values();
+      const array = Array.isArray(values) ? values : Array.from(values ?? []);
+      return array.filter((player): player is { name?: string; color?: string } => Boolean(player));
+    }
+
+    if (typeof playersState.forEach === 'function') {
+      const collected: Array<{ name?: string; color?: string }> = [];
+      playersState.forEach((player) => {
+        if (player) {
+          collected.push(player);
+        }
+      });
+      return collected;
+    }
+
+    if (typeof playersState[Symbol.iterator] === 'function') {
+      return Array.from(playersState).filter((player): player is { name?: string; color?: string } => Boolean(player));
+    }
+
+    return [];
   }
 
   private getColorValue(color: string) {
