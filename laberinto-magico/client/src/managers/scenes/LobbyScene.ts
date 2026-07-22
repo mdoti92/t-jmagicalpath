@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Client, Room, SeatReservation } from 'colyseus.js';
+import { Client, Room } from 'colyseus.js';
 
 const COLORS = ['rojo', 'azul', 'amarillo', 'verde'] as const;
 const COLOR_LABELS: Record<string, string> = {
@@ -13,6 +13,7 @@ export class LobbyScene extends Phaser.Scene {
   private client!: Client;
   private room?: Room;
   private nameInput!: Phaser.GameObjects.DOMElement;
+  private nameLabel!: Phaser.GameObjects.Text;
   private playerCountText!: Phaser.GameObjects.Text;
   private colorButtons: Phaser.GameObjects.Rectangle[] = [];
   private selectedColor: string = 'rojo';
@@ -37,7 +38,7 @@ export class LobbyScene extends Phaser.Scene {
       color: '#cfcfff'
     }).setOrigin(0.5);
 
-    this.add.text(220, 180, 'Nombre:', {
+    this.nameLabel = this.add.text(220, 180, 'Nombre:', {
       fontSize: '18px',
       color: '#ffffff'
     });
@@ -164,7 +165,7 @@ export class LobbyScene extends Phaser.Scene {
 
         const roomData = reservation?.data?.room ?? reservation?.data;
 
-        const formattedReservation: SeatReservation = {
+        const formattedReservation = {
           sessionId: reservation?.data?.sessionId,
           room: {
             name: roomData?.name,
@@ -172,7 +173,7 @@ export class LobbyScene extends Phaser.Scene {
             clients: roomData?.clients ?? 0,
             maxClients: roomData?.maxClients ?? this.playerCount
           }
-        };
+        } as any;
 
         this.room = await this.client.consumeSeatReservation(formattedReservation);
 
@@ -184,6 +185,7 @@ export class LobbyScene extends Phaser.Scene {
           const roomState = this.room?.state;
           const status = roomState?.status ?? '';
           if (status === 'PLAYING') {
+            this.hideLobbyInput();
             this.scene.start('BoardScene');
             this.scene.launch('UIScene');
           }
@@ -201,6 +203,22 @@ export class LobbyScene extends Phaser.Scene {
         this.statusText.setText('No se pudo conectar.');
       }
     });
+  }
+
+  private hideLobbyInput() {
+    this.nameLabel?.setVisible(false);
+
+    if (this.nameInput) {
+      const inputWithVisibility = this.nameInput as Phaser.GameObjects.DOMElement & { setVisible?: (visible: boolean) => Phaser.GameObjects.DOMElement };
+      if (typeof inputWithVisibility.setVisible === 'function') {
+        inputWithVisibility.setVisible(false);
+      }
+
+      const node = this.nameInput.node as HTMLElement | null;
+      if (node) {
+        node.style.display = 'none';
+      }
+    }
   }
 
   private updateColorSelection() {
@@ -233,40 +251,38 @@ export class LobbyScene extends Phaser.Scene {
   private renderPlayersList() {
     if (!this.room) return;
 
-    const players: string[] = this.getPlayers().map((player) => {
+    const players = this.getPlayers();
+    const playerLines: string[] = players.map((player) => {
       return `• ${player?.name || 'Jugador'} (${player?.color || 'sin color'})`;
     });
 
-    this.playerListText.setText(`Jugadores conectados:\n${players.length ? players.join('\n') : '- Ninguno aún'}`);
+    this.playerListText.setText(`Jugadores conectados:\n${playerLines.length ? playerLines.join('\n') : '- Ninguno aún'}`);
   }
 
   private getPlayers(): Array<{ name?: string; color?: string }> {
-    const playersState = this.room?.state?.players as any;
+    const playersState = (this.room?.state as any)?.players;
 
     if (!playersState) {
       return [];
     }
 
-    if (typeof playersState.values === 'function') {
-      const values = playersState.values() as Array<{ name?: string; color?: string } | undefined>;
-      return values.filter((player): player is { name?: string; color?: string } => Boolean(player));
-    }
+    const collected: Array<{ name?: string; color?: string }> = [];
 
-    if (typeof playersState.forEach === 'function') {
-      const collected: Array<{ name?: string; color?: string }> = [];
-      playersState.forEach((player: { name?: string; color?: string } | undefined) => {
-        if (player) {
-          collected.push(player);
+    try {
+      const entries = Object.entries(playersState as Record<string, unknown>);
+      entries.forEach(([, value]) => {
+        if (value && typeof value === 'object') {
+          const player = value as { name?: string; color?: string };
+          if (player.name || player.color) {
+            collected.push(player);
+          }
         }
       });
-      return collected;
+    } catch {
+      // Ignora errores si el estado no expone los valores como objeto
     }
 
-    if (typeof playersState[Symbol.iterator] === 'function') {
-      return Array.from(playersState as Iterable<{ name?: string; color?: string } | undefined>).filter(Boolean) as Array<{ name?: string; color?: string }>;
-    }
-
-    return [];
+    return collected;
   }
 
   private getColorValue(color: string) {
