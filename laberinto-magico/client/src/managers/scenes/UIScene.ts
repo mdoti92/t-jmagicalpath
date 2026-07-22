@@ -65,6 +65,12 @@ export class UIScene extends Phaser.Scene {
       this.syncUIWithState();
     });
 
+    this.room.onMessage('GAME_FINISHED', (payload: { winnerId?: string }) => {
+      const winner = payload?.winnerId ? this.room.state.players.get(payload.winnerId) : undefined;
+      const winnerName = winner ? winner.name : 'Jugador';
+      this.showWinModal(winnerName);
+    });
+
     this.syncUIWithState();
   }
 
@@ -84,7 +90,7 @@ export class UIScene extends Phaser.Scene {
     this.renderScores();
     this.updateDiceButtonState();
 
-    if (this.room.state.status === 'FINISHED') {
+    if (this.room.state.status === 'FINISHED' && !this.modalContainer) {
       const winner = this.room.state.players.get(this.room.state.winnerId);
       const winnerName = winner ? winner.name : 'Jugador';
       this.showWinModal(winnerName);

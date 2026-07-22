@@ -248,9 +248,14 @@ export class GameRoom extends Room<{ state: GameState }> {
   }
 
   private endGame(winner: Player) {
+    if (this.state.status === "FINISHED") {
+      return;
+    }
+
     this.state.status = "FINISHED";
     this.state.winnerId = winner.id;
     this.state.remainingMoves = 0;
     this.state.diceValue = 0;
+    this.broadcast("GAME_FINISHED", { winnerId: winner.id });
   }
 }
